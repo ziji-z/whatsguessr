@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat Encryptor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0e0e10;
+    --surface: #18181c;
+    --border:  #2a2a30;
+    --accent:  #c8f135;
+    --text:    #e8e8ec;
+    --muted:   #6b6b78;
+    --correct: #4ade80;
+    --wrong:   #f87171;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header {
+    width: 100%;
+    padding: 28px 40px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  header h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  header span.sub { font-size: 0.8rem; color: var(--muted); letter-spacing: 0.04em; }
+
+  main {
+    width: 100%;
+    max-width: 760px;
+    padding: 40px 24px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    padding: 14px;
+    resize: vertical;
+    line-height: 1.6;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+  #chatInput  { height: 220px; }
+  #blobOutput { height: 140px; color: var(--accent); cursor: text; }
+
+  .pw-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .pw-wrap {
+    position: relative;
+    flex: 1;
+  }
+  .pw-wrap input {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 1rem;
+    padding: 12px 44px 12px 14px;
+    outline: none;
+    transition: border-color 0.15s;
+    letter-spacing: 0.1em;
+  }
+  .pw-wrap input:focus { border-color: var(--accent); }
+  .pw-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 4px;
+  }
+  .pw-toggle:hover { color: var(--text); }
+
+  .btn-encrypt {
+    background: var(--accent);
+    color: #0e0e10;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 28px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .btn-encrypt:hover:not(:disabled) { background: #d9ff45; }
+  .btn-encrypt:disabled { opacity: 0.45; cursor: default; }
+
+  .output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .btn-copy {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-copy.copied { border-color: var(--correct); color: var(--correct); }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 22px;
+  }
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .status-dot.ok   { background: var(--correct); }
+  .status-dot.err  { background: var(--wrong); }
+  .status-dot.busy { background: #facc15; animation: pulse 0.8s ease infinite alternate; }
+  .status-msg {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .status-msg.ok  { color: var(--correct); }
+  .status-msg.err { color: var(--wrong); }
+
+  @keyframes pulse { from { opacity: 1; } to { opacity: 0.3; } }
+
+  .instructions {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.7;
+    border-left: 2px solid var(--border);
+    padding-left: 14px;
+  }
+  .instructions code {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Chat Encryptor</h1>
+  <span class="sub">AES-256-GCM · PBKDF2 · runs locally</span>
+</header>
+
+<main>
+
+  <div class="card">
+    <label>1 · Paste your raw chat export</label>
+    <textarea id="chatInput" placeholder="[7/2/25, 10:41:06 AM] Leo: hey&#10;[7/2/25, 10:42:01 AM] Priya: hey yourself"></textarea>
+  </div>
+
+  <div class="card">
+    <label>2 · Set a password</label>
+    <div class="pw-row">
+      <div class="pw-wrap">
+        <input type="password" id="pwInput" placeholder="choose a strong password" autocomplete="new-password" />
+        <button class="pw-toggle" id="pwToggle">👁</button>
+      </div>
+      <button class="btn-encrypt" id="encryptBtn">Encrypt →</button>
+    </div>
+    <div class="status-row">
+      <div class="status-dot" id="statusDot"></div>
+      <span class="status-msg" id="statusMsg">waiting…</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="output-header">
+      <label>3 · Encrypted blob</label>
+      <button class="btn-copy" id="copyBtn" disabled>Copy</button>
+    </div>
+    <textarea id="blobOutput" readonly placeholder="encrypted output will appear here…"></textarea>
+  </div>
+
+  <p class="instructions">
+    Copy the blob above and paste it into <code>whos-that.html</code> inside the backticks on the line that reads<br>
+    <code>const ENCRYPTED_BLOB = `…`;</code><br><br>
+    Each encryption produces a unique blob even for the same chat and password — that's the random salt and IV at work.
+    The blob contains everything needed to decrypt; nothing is sent anywhere.
+  </p>
+
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// -- CRYPTO -------------------------------------------------------------------
+async function deriveKey(password, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 100_000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt']
+  );
+}
+
+// Returns base64(salt[16] + iv[12] + ciphertext)
+async function encryptText(plaintext, password) {
+  const enc  = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv   = crypto.getRandomValues(new Uint8Array(12));
+  const key  = await deriveKey(password, salt);
+  const ct   = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(plaintext));
+  const blob = new Uint8Array(16 + 12 + ct.byteLength);
+  blob.set(salt, 0);
+  blob.set(iv, 16);
+  blob.set(new Uint8Array(ct), 28);
+  let binary = '';
+  for (let i = 0; i < blob.length; i++) binary += String.fromCharCode(blob[i]);
+  return btoa(binary);
+}
+
+// -- STATUS -------------------------------------------------------------------
+function setStatus(state, msg) {
+  const dot = $('statusDot');
+  const txt = $('statusMsg');
+  dot.className = 'status-dot ' + state;
+  txt.className = 'status-msg ' + state;
+  txt.textContent = msg;
+}
+
+// -- ENCRYPT ------------------------------------------------------------------
+async function doEncrypt() {
+  const chat = $('chatInput').value.trim();
+  const pw   = $('pwInput').value;
+
+  if (!chat) { setStatus('err', 'Paste some chat text first.'); return; }
+  if (!pw)   { setStatus('err', 'Enter a password.'); return; }
+
+  $('encryptBtn').disabled = true;
+  $('copyBtn').disabled    = true;
+  $('blobOutput').value    = '';
+  setStatus('busy', 'Deriving key… (100k PBKDF2 rounds)');
+
+  try {
+    const blob = await encryptText(chat, pw);
+    $('blobOutput').value = blob;
+    $('copyBtn').disabled = false;
+    setStatus('ok', `Done — ${blob.length.toLocaleString()} chars · ${(chat.length / 1024).toFixed(1)} KB plaintext`);
+  } catch (e) {
+    setStatus('err', 'Encryption failed: ' + e.message);
+  } finally {
+    $('encryptBtn').disabled = false;
+  }
+}
+
+// -- COPY ---------------------------------------------------------------------
+$('copyBtn').addEventListener('click', async () => {
+  const blob = $('blobOutput').value;
+  if (!blob) return;
+  await navigator.clipboard.writeText(blob);
+  const btn = $('copyBtn');
+  btn.textContent = 'Copied ✓';
+  btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+});
+
+// -- EVENTS -------------------------------------------------------------------
+$('encryptBtn').addEventListener('click', doEncrypt);
+$('pwInput').addEventListener('keydown', e => { if (e.key === 'Enter') doEncrypt(); });
+$('pwToggle').addEventListener('click', () => {
+  const inp = $('pwInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+});
+</script>
+</body>
+</html>
