@@ -47,6 +47,22 @@
     color: var(--accent);
   }
   header span.sub { font-size: 0.8rem; color: var(--muted); letter-spacing: 0.04em; }
+  a.btn-back {
+    margin-left: auto;
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+    align-self: center;
+  }
+  a.btn-back:hover { border-color: var(--accent); color: var(--accent); }
 
   main {
     width: 100%;
@@ -218,6 +234,7 @@
 <header>
   <h1>Chat Encryptor</h1>
   <span class="sub">AES-256-GCM · PBKDF2 · runs locally</span>
+  <a class="btn-back" href="index.html">← Game</a>
 </header>
 
 <main>
